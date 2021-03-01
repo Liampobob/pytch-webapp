@@ -225,6 +225,51 @@ const makeTextPane = (): IPlainTextPane => ({
 export const standardOutputPane = makeTextPane();
 export const editorWebSocketLog = makeTextPane();
 
+export interface DebugState {
+  isDebugged: boolean;
+  changeDebugged: Action<DebugState>;
+  setDebugged: Action<DebugState, boolean>;
+  stepForward: number;
+  setStepForward: Action<DebugState, number>;
+  messageBreakpoints: string[];
+  addMessageBreakpoint: Action<DebugState, string>;
+  removeMessageBreakpoint: Action<DebugState, string>;
+  clearMessageBreakpoint: Action<DebugState>;
+  areBreakpointsMuted: boolean;
+  changeAreBreakpointsMuted: Action<DebugState>;
+}
+
+export const debugState : DebugState = {
+  isDebugged: false,
+  changeDebugged: action((state) => {
+    state.isDebugged = !state.isDebugged;
+  }),
+  setDebugged: action((state, newState) => {
+    state.isDebugged = newState;
+  }),
+  stepForward: 0,
+  setStepForward: action((state, stepAmount) => {
+    state.stepForward = stepAmount;
+  }),
+  messageBreakpoints: [],
+  addMessageBreakpoint: action((state, message) => {
+    state.messageBreakpoints.push(message);
+  }),
+  removeMessageBreakpoint: action((state, message) => {
+    const index = state.messageBreakpoints.indexOf(message);
+    if (index > -1) {
+      state.messageBreakpoints.splice(index, 1);
+    }
+  }),
+  clearMessageBreakpoint: action((state, message) => {
+    state.messageBreakpoints = [];
+  }),
+  areBreakpointsMuted: false,
+  changeAreBreakpointsMuted: action((state) => {
+    state.areBreakpointsMuted = !state.areBreakpointsMuted;
+  }),
+}
+
 // TODO: Does this interface belong somewhere else?
 export interface IErrorReport {
   pytchError: any; // TODO

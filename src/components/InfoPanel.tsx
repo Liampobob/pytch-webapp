@@ -8,6 +8,7 @@ import ProjectAssetList from "./ProjectAssetList";
 import EditorWebSocketInfo from "./EditorWebSocketInfo";
 import { liveReloadEnabled } from "../constants";
 import { LayoutChooser } from "./LayoutChooser";
+import {DebuggerItem, StringItem, NumberItem, ListItem} from "./DebugItems"
 
 const StandardOutput = () => {
   const text = useStoreState((state) => state.standardOutputPane.text);
@@ -37,78 +38,44 @@ const Errors = () => {
   return <div className="ErrorsPane">{inner}</div>;
 };
 
-enum DataType {
-  string,
-  number,
-  list
-}
-
-class DebugerItem {
-  type: DataType;
-
-  constructor(type:DataType) {
-    this.type = type;
-  }
-
-  display() {
-    return <p className="variable">  </p>;
-  };
-}
-
-class StringItem extends DebugerItem {
-  value: string;
-
-  constructor(val: string) {
-    super(DataType.string);
-    this.value = val;
-  }
-
-  display() {
-    return <p className="variable"> {this.value} </p>;
-  }
-}
-
-class NumberItem extends DebugerItem {
-  value: number;
-
-  constructor(val: number) {
-    super(DataType.number);
-    this.value = val;
-  }
-
-  display() {
-    return <p className="variable"> {this.value} </p>;
-  }
-}
-
-class ListItem extends DebugerItem {
-  value: any[];
-
-  constructor(val: any[]) {
-    super(DataType.list);
-    this.value = val;
-  }
-
-  display() {
-    return <p className="variable"> {this.value} </p>;
-  }
-}
-
 const Debuger = () => {
-  const variables : DebugerItem[] = [
+  const variables : DebuggerItem[] = [
     new StringItem("hi"),
     new NumberItem(0),
     new ListItem([0,1,2])
   ];
-  const inner =[
+  const setStepForward = useStoreActions((state) => state.debugState.setStepForward);
+  const changeDebugState = useStoreActions((state) => state.debugState.changeDebugged);
+  const changeAreBreakpointsMuted = useStoreActions((state) => state.debugState.changeAreBreakpointsMuted);
+  const addBreakpointMessage = useStoreActions((state) => state.debugState.addMessageBreakpoint);
+  const isPaused = useStoreState((state) => state.debugState.isDebugged);
+  const areBreakpointsMuted = useStoreState((state) => state.debugState.areBreakpointsMuted);
+  const breakpointMessages = useStoreState((state) => state.debugState.messageBreakpoints);
+  const playButtonName = (isPaused)? 'Play' : 'Pause';
+  const muteButtonName = (areBreakpointsMuted)? 'Unmute' : 'Mute';
+
+  let tmpMessage = "";
+
+  const inner = [
     <button type="button">Rerun</button>,
-    <button type="button">Play</button>,
-    <button type="button">Pause</button>,
-    <button type="button">Step Forward</button>,
-    <button type="button">Step Out</button>,
-    <button type="button">Step Back</button>,
-    <button type="button">Terminate</button>,
-    <button type="button">Mute Breakpoints</button>,
+    <button type="button" onClick={() => changeDebugState()}>{playButtonName}</button>,
+    <button type="button" onClick={() => setStepForward(1)}>Step Forward</button>,
+    <button type="button" onClick={() => changeAreBreakpointsMuted()}>{muteButtonName} Breakpoints</button>,
+    <form>
+      <div className="field">
+        <label htmlFor="message">Message: </label>
+        <input
+          type="text"
+          id="message"
+          name="message"
+          onChange={(text) => tmpMessage = text.target.value}
+        />
+      </div>
+    </form>,
+    <button type="button" onClick={() => addBreakpointMessage(tmpMessage)}>Add Breakpoint</button>,
+    <p>
+      Message Breakpoints: {breakpointMessages}
+    </p>,
     <p className="tmp">
       Debugger WIP
     </p>

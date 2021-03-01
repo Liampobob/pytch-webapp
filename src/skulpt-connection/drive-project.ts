@@ -6,6 +6,7 @@ import {
   stageHalfHeight,
 } from "../constants";
 import { failIfNull } from "../utils";
+import { ActionCreator } from "easy-peasy";
 
 declare var Sk: any;
 
@@ -26,6 +27,24 @@ export interface ISpeechBubble {
   tipY: number;
 }
 
+export class DebuggerState {
+  isPaused: boolean;
+  changeDebugStateCallback: ActionCreator<boolean>;
+  pauseOnMessage: string[];
+  stepForward: number;
+  setStepForwardCallback: ActionCreator<number>;
+  muteBreakpoints: boolean;
+
+  constructor(isPaused: boolean, changeDebugStateCallback: ActionCreator<boolean>, stepForward: number, setStepForwardCallback: ActionCreator<number>, pauseOnMessage: string[], muteBreakpoints: boolean){
+    this.isPaused = isPaused;
+    this.changeDebugStateCallback = changeDebugStateCallback;
+    this.stepForward = stepForward;
+    this.setStepForwardCallback = setStepForwardCallback;
+    this.pauseOnMessage = pauseOnMessage;
+    this.muteBreakpoints = muteBreakpoints;
+  }
+}
+
 type LiveSpeechBubble = ISpeechBubble & { div: HTMLDivElement };
 
 export class ProjectEngine {
@@ -34,12 +53,14 @@ export class ProjectEngine {
   canvasContext: CanvasRenderingContext2D;
   bubblesDiv: HTMLDivElement;
   shouldRun: boolean;
+  debuggerState: DebuggerState;
   liveSpeechBubbles: Map<SpeakerId, LiveSpeechBubble>;
 
-  constructor(canvas: HTMLCanvasElement, bubblesDiv: HTMLDivElement) {
+  constructor(canvas: HTMLCanvasElement, bubblesDiv: HTMLDivElement, debuggerState: DebuggerState) {
     this.id = peId;
     peId += 1;
 
+    this.debuggerState = debuggerState;
     this.canvas = canvas;
     this.bubblesDiv = bubblesDiv;
     this.bubblesDiv.innerHTML = "";
@@ -114,6 +135,10 @@ export class ProjectEngine {
   }
 
   addSpeechBubble(bubble: ISpeechBubble) {
+
+    if(!this.debuggerState.muteBreakpoints && this.debuggerState.pauseOnMessage.includes(bubble.content))
+      this.debuggerState.changeDebugStateCallback(true);
+
     const div = this.createRawSpeechBubble(bubble.content);
     this.bubblesDiv.appendChild(div);
 
@@ -256,17 +281,30 @@ export class ProjectEngine {
       return;
     }
 
-    Sk.pytch.sound_manager.one_frame();
-    project.one_frame();
-    const renderSucceeded = this.render(project);
+    const shouldPlay = !this.debuggerState.isPaused || this.debuggerState.stepForward > 0;
+    if(shouldPlay) {
+      console.log(this.debuggerState.stepForward);
+      Sk.pytch.sound_manager.one_frame();
+      project.one_frame(!shouldPlay);
+      const renderSucceeded = this.render(project);
 
-    if (!renderSucceeded) {
-      console.log(`${logIntro}: error while rendering; bailing`);
-      return;
+      if (!renderSucceeded) {
+        console.log(`${logIntro}: error while rendering; bailing`);
+        return;
+      }
+      if(this.debuggerState.stepForward > 0) {
+        this.debuggerState.stepForward--;
+        if(this.debuggerState.stepForward == 0)
+          this.debuggerState.setStepForwardCallback(0);
+      }
     }
 
     window.requestAnimationFrame(this.oneFrame);
   }
+
+  // setIsPaused(newPaused: boolean) {
+  //   this.isPaused = newPaused;
+  // }
 
   requestHalt() {
     console.log(`ProjectEngine[${this.id}]: requestHalt()`);

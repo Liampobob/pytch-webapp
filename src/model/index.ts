@@ -11,6 +11,8 @@ import {
   IPlainTextPane,
   errorReportList,
   IErrorReportList,
+  DebugState,
+  debugState,
 } from "./ui";
 
 import { activeProject, IActiveProject } from "./project";
@@ -28,6 +30,7 @@ export interface IPytchAppModel {
   errorReportList: IErrorReportList;
   reloadServer: IReloadServer;
   editorWebSocketLog: IPlainTextPane;
+  debugState: DebugState;
 }
 
 export const pytchAppModel: IPytchAppModel = {
@@ -41,4 +44,5 @@ export const pytchAppModel: IPytchAppModel = {
   errorReportList,
   reloadServer,
   editorWebSocketLog,
+  debugState,
 };
