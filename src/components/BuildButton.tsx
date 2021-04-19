@@ -5,10 +5,14 @@ import { useStoreState, useStoreActions } from "../store";
 const BuildButton = () => {
   const haveCode = useStoreState((state) => state.activeProject.haveProject);
   const build = useStoreActions((actions) => actions.activeProject.build);
+  const isPaused = useStoreState((state) => state.debugState.isDebugged);
+  const setDebugState = useStoreActions((state) => state.debugState.setDebugged);
 
   const onBuild = () => {
     console.log("BUILD click");
     build();
+    if(isPaused)
+      setDebugState(false);
   };
 
   return (

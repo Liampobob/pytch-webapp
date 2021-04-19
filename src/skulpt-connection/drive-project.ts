@@ -7,6 +7,7 @@ import {
 } from "../constants";
 import { failIfNull } from "../utils";
 import { ActionCreator } from "easy-peasy";
+import { Project } from "../components/DebugItems"
 
 declare var Sk: any;
 
@@ -27,21 +28,63 @@ export interface ISpeechBubble {
   tipY: number;
 }
 
-export class DebuggerState {
+export class DebuggerConfigurations {
   isPaused: boolean;
   changeDebugStateCallback: ActionCreator<boolean>;
-  pauseOnMessage: string[];
+  changePauseMessage: ActionCreator<string>;
+  broadcastBreakpoints: string[];
+  keypressBreakpoints: string[];
+  isClickBreakpointEnabled: boolean;
   stepForward: number;
   setStepForwardCallback: ActionCreator<number>;
   muteBreakpoints: boolean;
+  projectVariables: Project;
+  setProjectVariables: ActionCreator<any>;
+  shouldPullProjectVariables: boolean;
+  changeShouldPullProjectVariables: ActionCreator<boolean>;
 
-  constructor(isPaused: boolean, changeDebugStateCallback: ActionCreator<boolean>, stepForward: number, setStepForwardCallback: ActionCreator<number>, pauseOnMessage: string[], muteBreakpoints: boolean){
+  constructor(isPaused: boolean, 
+              changeDebugStateCallback: ActionCreator<boolean>, 
+              changePauseMessage: ActionCreator<string>,
+              stepForward: number, 
+              setStepForwardCallback: ActionCreator<number>, 
+              broadcastBreakpoints: string[],
+              keypressBreakpoints: string[],
+              isClickBreakpointEnabled: boolean,     
+              muteBreakpoints: boolean,
+              projectVariables: Project,
+              setProjectVariables: ActionCreator<any>,
+              shouldPullProjectVariables: boolean,
+              changeShouldPullProjectVariables: ActionCreator<boolean>){
     this.isPaused = isPaused;
     this.changeDebugStateCallback = changeDebugStateCallback;
+    this.changePauseMessage = changePauseMessage;
     this.stepForward = stepForward;
     this.setStepForwardCallback = setStepForwardCallback;
-    this.pauseOnMessage = pauseOnMessage;
+    this.broadcastBreakpoints = broadcastBreakpoints;
+    this.keypressBreakpoints = keypressBreakpoints;
+    this.isClickBreakpointEnabled = isClickBreakpointEnabled;
     this.muteBreakpoints = muteBreakpoints;
+    this.projectVariables = projectVariables;
+    this.setProjectVariables = setProjectVariables;
+    this.shouldPullProjectVariables = shouldPullProjectVariables;
+    this.changeShouldPullProjectVariables = changeShouldPullProjectVariables;
+  }
+
+  getConfigsForVM() {
+    if(this.muteBreakpoints) {
+      return {
+              'broadcastBreakpoints': [],
+              'keypressBreakpoints': [],
+              'isClickBreakpointEnabled': false
+             };
+    } else {
+      return {
+              'broadcastBreakpoints': this.broadcastBreakpoints,
+              'keypressBreakpoints': this.keypressBreakpoints,
+              'isClickBreakpointEnabled': this.isClickBreakpointEnabled
+             };
+    }
   }
 }
 
@@ -53,14 +96,14 @@ export class ProjectEngine {
   canvasContext: CanvasRenderingContext2D;
   bubblesDiv: HTMLDivElement;
   shouldRun: boolean;
-  debuggerState: DebuggerState;
+  debuggerConfigs: DebuggerConfigurations;
   liveSpeechBubbles: Map<SpeakerId, LiveSpeechBubble>;
 
-  constructor(canvas: HTMLCanvasElement, bubblesDiv: HTMLDivElement, debuggerState: DebuggerState) {
+  constructor(canvas: HTMLCanvasElement, bubblesDiv: HTMLDivElement, debuggerConfigs: DebuggerConfigurations) {
     this.id = peId;
     peId += 1;
 
-    this.debuggerState = debuggerState;
+    this.debuggerConfigs = debuggerConfigs;
     this.canvas = canvas;
     this.bubblesDiv = bubblesDiv;
     this.bubblesDiv.innerHTML = "";
@@ -135,9 +178,6 @@ export class ProjectEngine {
   }
 
   addSpeechBubble(bubble: ISpeechBubble) {
-
-    if(!this.debuggerState.muteBreakpoints && this.debuggerState.pauseOnMessage.includes(bubble.content))
-      this.debuggerState.changeDebugStateCallback(true);
 
     const div = this.createRawSpeechBubble(bubble.content);
     this.bubblesDiv.appendChild(div);
@@ -280,23 +320,53 @@ export class ProjectEngine {
       console.log(`${logIntro}: no real live project; bailing`);
       return;
     }
+    let projectResponse = null;
+    const shouldPlay = !this.debuggerConfigs.isPaused || this.debuggerConfigs.stepForward > 0;
+    if(shouldPlay){
+      if(!this.debuggerConfigs.shouldPullProjectVariables) {
+        console.log('should pull');
+        this.debuggerConfigs.changeShouldPullProjectVariables(true);
+      }
 
-    const shouldPlay = !this.debuggerState.isPaused || this.debuggerState.stepForward > 0;
-    if(shouldPlay) {
-      console.log(this.debuggerState.stepForward);
       Sk.pytch.sound_manager.one_frame();
-      project.one_frame(!shouldPlay);
+      projectResponse = project.one_frame(this.debuggerConfigs.getConfigsForVM());
+
       const renderSucceeded = this.render(project);
 
       if (!renderSucceeded) {
         console.log(`${logIntro}: error while rendering; bailing`);
         return;
       }
-      if(this.debuggerState.stepForward > 0) {
-        this.debuggerState.stepForward--;
-        if(this.debuggerState.stepForward == 0)
-          this.debuggerState.setStepForwardCallback(0);
+      
+      if(this.debuggerConfigs.stepForward > 0) {
+        this.debuggerConfigs.stepForward--;
+        if(this.debuggerConfigs.stepForward === 0) {
+          this.debuggerConfigs.setStepForwardCallback(0);
+        }
+      } 
+
+      if(projectResponse != null) {
+        this.debuggerConfigs.changePauseMessage(projectResponse.pauseMessage);
+        if(projectResponse.shouldPause) 
+          this.debuggerConfigs.changeDebugStateCallback(true);
       }
+  
+    } else {
+      if (this.debuggerConfigs.shouldPullProjectVariables) {
+        console.log('pulling vars')
+        this.debuggerConfigs.setProjectVariables(new Project(project));
+        this.debuggerConfigs.changeShouldPullProjectVariables(false);
+      } 
+      if(this.debuggerConfigs.projectVariables != null && this.debuggerConfigs.projectVariables.updateProjectIfModified(project, Sk)) {
+
+          const renderSucceeded = this.render(project);
+
+          if (!renderSucceeded) {
+            console.log(`${logIntro}: error while rendering; bailing`);
+            return;
+          }
+      }
+      
     }
 
     window.requestAnimationFrame(this.oneFrame);

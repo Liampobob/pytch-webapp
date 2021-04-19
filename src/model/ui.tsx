@@ -226,17 +226,36 @@ export const standardOutputPane = makeTextPane();
 export const editorWebSocketLog = makeTextPane();
 
 export interface DebugState {
+  // Base Debugger Variables
   isDebugged: boolean;
   changeDebugged: Action<DebugState>;
   setDebugged: Action<DebugState, boolean>;
   stepForward: number;
   setStepForward: Action<DebugState, number>;
-  messageBreakpoints: string[];
-  addMessageBreakpoint: Action<DebugState, string>;
-  removeMessageBreakpoint: Action<DebugState, string>;
-  clearMessageBreakpoint: Action<DebugState>;
+  pauseMessage: string;
+  changePauseMessage: Action<DebugState, string>
+
+  // Breakpoint Variables
+  broadcastBreakpoints: string[];
+  addBroadcastBreakpoint: Action<DebugState, string>;
+  removeBroadcastBreakpoint: Action<DebugState, string>;
+  keypressBreakpoints: string[];
+  addKeypressBreakpoint: Action<DebugState, string>;
+  removeKeypressBreakpoint: Action<DebugState, string>;
+  isClickBreakpointEnabled: boolean;
+  changeIsClickBreakpointEnabled: Action<DebugState, boolean>;
   areBreakpointsMuted: boolean;
   changeAreBreakpointsMuted: Action<DebugState>;
+
+  // Project Variables
+  projectVariables: any;
+  setProjectVariables: Action<DebugState, any>;
+  shouldUpdateProjectVariables: boolean;
+  changeShouldUpdateProjectVariables: Action<DebugState, boolean>;
+
+  // State used to update debugger ui from DebugItems object.
+  shouldDebuggerUpdate: boolean; 
+  updateDebugger: Action<DebugState>;
 }
 
 export const debugState : DebugState = {
@@ -250,23 +269,62 @@ export const debugState : DebugState = {
   stepForward: 0,
   setStepForward: action((state, stepAmount) => {
     state.stepForward = stepAmount;
+
   }),
-  messageBreakpoints: [],
-  addMessageBreakpoint: action((state, message) => {
-    state.messageBreakpoints.push(message);
+  pauseMessage: '',
+  changePauseMessage: action((state, message) => {
+    state.pauseMessage = message;
   }),
-  removeMessageBreakpoint: action((state, message) => {
-    const index = state.messageBreakpoints.indexOf(message);
+
+  broadcastBreakpoints: [],
+  addBroadcastBreakpoint: action((state, message) => {
+    state.broadcastBreakpoints.push(message);
+  }),
+  removeBroadcastBreakpoint: action((state, message) => {
+    const index = state.broadcastBreakpoints.indexOf(message);
+
     if (index > -1) {
-      state.messageBreakpoints.splice(index, 1);
+      state.broadcastBreakpoints.splice(index, 1);
     }
   }),
-  clearMessageBreakpoint: action((state, message) => {
-    state.messageBreakpoints = [];
+  keypressBreakpoints: [],
+  addKeypressBreakpoint: action((state, message) => {
+    state.keypressBreakpoints.push(message);
+
+  }),
+  removeKeypressBreakpoint: action((state, message) => {
+    const index = state.keypressBreakpoints.indexOf(message);
+
+    if (index > -1) {
+      state.keypressBreakpoints.splice(index, 1);
+    }
+  }),
+  isClickBreakpointEnabled: false,
+  changeIsClickBreakpointEnabled: action((state, newState) => {
+    state.isClickBreakpointEnabled =  newState;
+
   }),
   areBreakpointsMuted: false,
   changeAreBreakpointsMuted: action((state) => {
     state.areBreakpointsMuted = !state.areBreakpointsMuted;
+
+  }),
+  
+  projectVariables: null,
+  setProjectVariables: action((state, vars) => {
+    state.projectVariables = vars;
+    console.log('changed project vars')
+
+  }), 
+  shouldUpdateProjectVariables: true,
+  changeShouldUpdateProjectVariables: action((state, bool) => {
+    state.shouldUpdateProjectVariables = bool;
+
+  }), 
+  shouldDebuggerUpdate: false,
+  updateDebugger: action((state) => {
+    state.shouldDebuggerUpdate = !state.shouldDebuggerUpdate;
+
   }),
 }
 

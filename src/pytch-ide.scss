@@ -305,6 +305,59 @@ div.spacer-instead-of-resizer {
   }
 }
 
+.DebuggerController {
+  width: 30%;
+  float : left;
+}  
+
+.DebuggerOutput {
+  background-color: rgb(233, 233, 233);
+  width: 68%;
+  float: left;
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+.DebuggerItem {
+  width: 95%;
+  margin-top: 5px;
+  margin-left: 5px;
+  text-align: left;
+}
+
+.DebuggerInlineItem {
+  display:inline-block
+}
+
+.DebuggerVariable {
+  width: 95%;
+  margin-top: 5px;
+  margin-left: 5px;
+  border: none;
+  text-align: left;
+  outline: none;
+}
+
+.DebuggerVariableComponent {
+  display:inline-block;
+}
+
+.DebuggerBox {
+  background-color: rgb(233, 233, 233);
+  width: 95%;
+  margin-top: 5px;
+  margin-left: 5px;
+  text-align: left;
+}
+
+.DebuggerBreakpointName {
+  display:inline-block
+}
+
+.DebuggerBreakpointButton {
+  float: right;
+}
+
 .AssetCardPane {
   h1 {
     margin: 2rem;

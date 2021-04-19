@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { BrowserKeyboard } from "../skulpt-connection/browser-keyboard";
 import { BrowserMouse } from "../skulpt-connection/browser-mouse";
-import { ProjectEngine, DebuggerState } from "../skulpt-connection/drive-project";
+import { ProjectEngine, DebuggerConfigurations } from "../skulpt-connection/drive-project";
 import { useStoreState, useStoreActions } from "../store";
 import { failIfNull } from "../utils";
 
@@ -20,13 +20,20 @@ const Stage = () => {
     (state) => state.ideLayout.stageVerticalResizeState != null
   );
 
-  const debuggerState = new DebuggerState(
+  const debuggerState = new DebuggerConfigurations(
     useStoreState((state) => state.debugState.isDebugged), 
     useStoreActions((state) => state.debugState.setDebugged),
+    useStoreActions((state) => state.debugState.changePauseMessage),
     useStoreState((state) => state.debugState.stepForward),
     useStoreActions((state) => state.debugState.setStepForward),
-    useStoreState((state) => state.debugState.messageBreakpoints),
+    useStoreState((state) => state.debugState.broadcastBreakpoints),
+    useStoreState((state) => state.debugState.keypressBreakpoints),
+    useStoreState((state) => state.debugState.isClickBreakpointEnabled),
     useStoreState((state) => state.debugState.areBreakpointsMuted),
+    useStoreState((state) => state.debugState.projectVariables),
+    useStoreActions((state) => state.debugState.setProjectVariables),
+    useStoreState((state) => state.debugState.shouldUpdateProjectVariables),
+    useStoreActions((state) => state.debugState.changeShouldUpdateProjectVariables),
     );  
 
   const canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
