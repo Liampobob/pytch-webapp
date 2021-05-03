@@ -28,6 +28,7 @@ export interface ISpeechBubble {
   tipY: number;
 }
 
+// Used to allow the drive-project to have access to the react hooks.
 export class DebuggerConfigurations {
   isPaused: boolean;
   changeDebugStateCallback: ActionCreator<boolean>;
@@ -352,11 +353,15 @@ export class ProjectEngine {
       }
   
     } else {
+
+      // Pulls the project state if the project has just been paused.
       if (this.debuggerConfigs.shouldPullProjectVariables) {
         console.log('pulling vars')
         this.debuggerConfigs.setProjectVariables(new Project(project));
         this.debuggerConfigs.changeShouldPullProjectVariables(false);
       } 
+
+      // Renders stage if the project has been modified.
       if(this.debuggerConfigs.projectVariables != null && this.debuggerConfigs.projectVariables.updateProjectIfModified(project, Sk)) {
 
           const renderSucceeded = this.render(project);
